@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic-settings
+langchain
+sentence-transformers
+redis
+transformers
+torch
+torchvision
+torchaudio
+accelerate
