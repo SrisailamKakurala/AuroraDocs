@@ -74,3 +74,5 @@ This app aims to be a **one-stop academic assistant** by supporting:
 * Theming (Light/Dark mode).
 * Profile management & logout.
 
+
+
