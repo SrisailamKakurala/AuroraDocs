@@ -1,8 +1,8 @@
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from google.generativeai import GenerativeModel, configure
-import redis
+from langchain_community.embeddings import HuggingFaceEmbeddings # type: ignore
+from google.generativeai import GenerativeModel, configure # type: ignore
+import redis # type: ignore
 import asyncio
-import numpy as np
+import numpy as np # type: ignore
 from app.config.env import get_settings
 
 settings = get_settings()

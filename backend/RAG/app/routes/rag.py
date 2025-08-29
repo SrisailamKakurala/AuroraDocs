@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status # type: ignore
 from app.services.rag_processor import process_rag
 from app.config.env import get_settings
-from pydantic import BaseModel
+from pydantic import BaseModel # type: ignore
 
 class RagRequest(BaseModel):
     query: str
