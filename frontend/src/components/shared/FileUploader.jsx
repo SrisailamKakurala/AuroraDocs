@@ -24,7 +24,7 @@ export default function FileUploader({
       transition={{ duration: 0.5, ease: "easeInOut" }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
-      className="relative w-full max-w-lg mx-auto p-10 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center gap-4 bg-black/30 backdrop-blur-md text-white cursor-pointer hover:border-purple-600 transition-all min-h-[300px]"
+      className="relative w-full max-w-lg mx-auto p-10 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center gap-4 bg-black/30 backdrop-blur-md text-white cursor-pointer hover:border-purple-600 transition-all duration-200 min-h-[300px]"
     >
       {isUploading ? (
         <div className="flex flex-col items-center gap-4 w-full">

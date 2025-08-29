@@ -6,6 +6,7 @@ import { FileText, Sparkles, ArrowRight, X } from "lucide-react";
 import FileUploader from "@/components/shared/FileUploader";
 import ChatWindow from "@/components/shared/ChatWindow";
 import ChatInput from "@/components/shared/ChatInput";
+import { v4 as uuidv4 } from 'uuid';
 
 const FileUploadProgress = ({ file, progress }) => (
   <motion.div
@@ -46,6 +47,8 @@ export default function MultiDocChat() {
   const [input, setInput] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const chatEndRef = useRef(null);
+  const [vectorIds, setVectorIds] = useState([]);
+  const sessionId = uuidv4();  // Unique session ID
 
   const features = [
     {
@@ -76,25 +79,67 @@ export default function MultiDocChat() {
     };
     setUploadQueue((prev) => [...prev, uploadItem]);
 
-    // Fake upload
-    const totalSteps = 10;
-    for (let i = 1; i <= totalSteps; i++) {
-      await new Promise((r) => setTimeout(r, 300));
+    try {
+      // Simulate progress for extraction
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const extractResponse = await fetch('http://0.0.0.0:8000/process/process', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!extractResponse.ok) {
+        throw new Error('Extraction failed');
+      }
+
+      const extractData = await extractResponse.json();
       setUploadQueue((prev) =>
         prev.map((item) =>
           item.id === uploadItem.id
-            ? { ...item, progress: i * (100 / totalSteps) }
+            ? { ...item, progress: 50 }  // 50% after extraction
             : item
         )
       );
-    }
 
-    setFiles((prev) => [...prev, selectedFile]);
-    setUploadQueue((prev) => prev.filter((item) => item.id !== uploadItem.id));
+      // Embed the text
+      const embedResponse = await fetch('http://0.0.0.0:8001/embed/embed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: extractData.text, session_id: sessionId }),
+      });
+
+      if (!embedResponse.ok) {
+        throw new Error('Embedding failed');
+      }
+
+      const embedData = await embedResponse.json();
+      setVectorIds((prev) => [...prev, embedData.vector_id]);
+      setUploadQueue((prev) =>
+        prev.map((item) =>
+          item.id === uploadItem.id
+            ? { ...item, progress: 100 }  // 100% after embedding
+            : item
+        )
+      );
+
+      setFiles((prev) => [...prev, selectedFile]);
+      setUploadQueue((prev) => prev.filter((item) => item.id !== uploadItem.id));
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setMessages([
+        {
+          type: "bot",
+          content: `Error processing file: ${error.message}`,
+        },
+      ]);
+      setUploadQueue((prev) => prev.filter((item) => item.id !== uploadItem.id));
+    }
   };
 
   const removeFile = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    setVectorIds((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleStartChat = () => {
@@ -108,22 +153,44 @@ export default function MultiDocChat() {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || vectorIds.length === 0) return;
 
     setMessages((prev) => [...prev, { type: "user", content: input }]);
     const userQuestion = input;
     setInput("");
     setIsAnalyzing(true);
 
-    await new Promise((r) => setTimeout(r, 1500));
-    setMessages((prev) => [
-      ...prev,
-      {
-        type: "bot",
-        content: `This is a simulated response about multiple documents to: "${userQuestion}"`,
-      },
-    ]);
-    setIsAnalyzing(false);
+    try {
+      const ragResponse = await fetch('http://0.0.0.0:8004/rag-service/rag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: userQuestion, session_ids: vectorIds }),
+      });
+
+      if (!ragResponse.ok) {
+        throw new Error('RAG failed');
+      }
+
+      const ragData = await ragResponse.json();
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "bot",
+          content: ragData.response,
+        },
+      ]);
+      setIsAnalyzing(false);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "bot",
+          content: `Error: ${error.message}`,
+        },
+      ]);
+      setIsAnalyzing(false);
+    }
   };
 
   return (

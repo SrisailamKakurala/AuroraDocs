@@ -1,0 +1,3 @@
+doc_processor: uvicorn doc_processor.main:app --reload --port 8002
+embedder: uvicorn embedder.main:app --reload --port 8003
+RAG: uvicorn rag.main:app --reload --port 8004

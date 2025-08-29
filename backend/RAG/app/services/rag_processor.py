@@ -1,4 +1,4 @@
-from langchain_community.embeddings import HuggingFaceEmbeddings # type: ignore
+from langchain_huggingface import HuggingFaceEmbeddings # type: ignore
 from google.generativeai import GenerativeModel, configure # type: ignore
 import redis # type: ignore
 import asyncio

@@ -3,12 +3,26 @@ from app.config.database import db
 from app.config.redis_client import redis_client
 from app.routes.auth import router as auth_router
 import logging
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Auth Service", version="1.0.0")
 app.include_router(auth_router, prefix="/auth")
+# CORS Middleware
+origins = [
+    "http://localhost:5173",  # Vite development server
+    "http://127.0.0.1:5173",  # Alternative localhost address
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # List of allowed origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 @app.on_event("startup")
 async def startup():
