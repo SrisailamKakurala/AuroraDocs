@@ -9,3 +9,5 @@ torch
 torchvision
 torchaudio
 accelerate
+google-generativeai
+langchain-community

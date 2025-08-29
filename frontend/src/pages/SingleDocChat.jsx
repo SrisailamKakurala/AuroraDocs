@@ -6,6 +6,7 @@ import { FileText, Sparkles, MessageCircle, ArrowRight } from "lucide-react";
 import FileUploader from "@/components/shared/FileUploader";
 import ChatWindow from "@/components/shared/ChatWindow";
 import ChatInput from "@/components/shared/ChatInput";
+import axios from "axios";
 
 export default function SingleDocChat() {
   const [step, setStep] = useState("intro");
@@ -16,6 +17,8 @@ export default function SingleDocChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [sessionId, setSessionId] = useState("");
+  const [vectorId, setVectorId] = useState("");
   const chatEndRef = useRef(null);
 
   // Auto scroll to bottom when new messages arrive
@@ -51,26 +54,49 @@ export default function SingleDocChat() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate file upload progress
-    const totalSteps = 10;
-    for (let i = 1; i <= totalSteps; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setUploadProgress(i * (100 / totalSteps));
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      // Step 1: Process the document to get text
+      const processResponse = await axios.post("http://localhost:8000/docprocessor/process", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percent);
+        },
+      });
+
+      const extractedText = processResponse.data.text;
+      setSessionId(`session_${Date.now()}`);
+
+      // Step 2: Embed the text
+      const embedResponse = await axios.post("http://localhost:8001/embedder/embed", {
+        text: extractedText,
+        session_id: `session_${Date.now()}`,
+      });
+
+      setVectorId(embedResponse.data.vector_id);
+
+      setIsUploading(false);
+      setIsUploaded(true);
+      setStep("chat");
+
+      // Add initial message
+      setMessages([
+        {
+          type: "bot",
+          content: `👋 Hi! I've processed ${selectedFile.name}. What would you like to know about it?`,
+        },
+      ]);
+    } catch (error) {
+      console.error("Error uploading/processing file:", error);
+      setMessages([
+        ...messages,
+        { type: "bot", content: "Error processing the document. Please try again." },
+      ]);
+      setIsUploading(false);
     }
-
-    // Simulate processing
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsUploading(false);
-    setIsUploaded(true);
-    setStep("chat");
-
-    // Add initial message
-    setMessages([
-      {
-        type: "bot",
-        content: `👋 Hi! I've processed ${selectedFile.name}. What would you like to know about it?`,
-      },
-    ]);
   };
 
   const handleSendMessage = async () => {
@@ -82,17 +108,29 @@ export default function SingleDocChat() {
     setInput("");
     setIsAnalyzing(true);
 
-    // Simulated AI response
-    setTimeout(() => {
+    try {
+      // Call RAG service
+      const ragResponse = await axios.post("http://localhost:8002/rag-service/rag", {
+        query: userQuestion,
+        session_ids: [vectorId],
+      });
+
       setMessages((prev) => [
         ...prev,
         {
           type: "bot",
-          content: `This is a simulated response to: "${userQuestion}"`,
+          content: ragResponse.data.response,
         },
       ]);
+    } catch (error) {
+      console.error("Error generating response:", error);
+      setMessages((prev) => [
+        ...prev,
+        { type: "bot", content: "Error generating response. Please try again." },
+      ]);
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -149,59 +187,45 @@ export default function SingleDocChat() {
                 </motion.button>
               </div>
 
-               {/* Features Grid */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            >
-              {features.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 + index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="group p-8 bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 transition-all duration-300 relative before:absolute before:inset-0 before:rounded-2xl before:transition-opacity before:duration-500 before:opacity-0 group-hover:before:opacity-100 before:pointer-events-none"
-                  style={{
-                    '--glow-color': `linear-gradient(
-                      135deg,
-                      rgba(168, 85, 247, 0.4),
-                      rgba(59, 130, 246, 0.4),
-                      rgba(236, 72, 153, 0.4)
-                    )`,
-                    '--glow-spread': '25px',
-                    '--glow-blur': '25px',
-                    boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                  }}
-                >
-                  <div className="absolute -z-10 inset-0 rounded-2xl transition-opacity duration-500 opacity-0 group-hover:opacity-100"
+              {/* Features Grid */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-8"
+              >
+                {features.map((feature, index) => (
+                  <motion.div
+                    key={feature.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 + index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="group p-8 bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 transition-all duration-300 relative before:absolute before:inset-0 before:rounded-2xl before:transition-opacity before:duration-500 before:opacity-0 group-hover:before:opacity-100 before:pointer-events-none"
                     style={{
-                      background: `
-                        radial-gradient(
-                          800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-                          var(--glow-color),
-                          transparent 40%
-                        )
-                      `,
-                      backgroundImage: 'var(--glow-color)',
-                      filter: 'blur(var(--glow-blur))',
+                      '--glow-color': `linear-gradient(
+                        135deg,
+                        rgba(168, 85, 247, 0.4),
+                        rgba(59, 130, 246, 0.4),
+                        rgba(236, 72, 153, 0.4)
+                      )`,
+                      '--glow-spread': '25px',
+                      '--glow-blur': '25px',
+                      boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.1)',
                     }}
-                  />
-
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center mb-6">
-                    <feature.icon className="w-6 h-6 text-purple-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-400 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </motion.div>
-              ))}
-            </motion.div>
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center mb-6">
+                      <feature.icon className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-3">
+                      {feature.title}
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </motion.div>
             </motion.div>
           )}
 

@@ -1,6 +1,6 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
-import redis
+from langchain.text_splitter import RecursiveCharacterTextSplitter # type: ignore
+from langchain_huggingface import HuggingFaceEmbeddings # type: ignore
+import redis # type: ignore
 import uuid
 import asyncio
 from app.config.env import get_settings
@@ -27,8 +27,11 @@ async def embed_text(text: str, session_id: str):
     # Generate a unique vector ID per session
     vector_id = f"{session_id}:{uuid.uuid4()}"
     
-    # Store embeddings in Redis with TTL
-    for i, embedding in enumerate(embeddings):
-        redis_client.setex(f"{vector_id}:{i}", settings.ttl_seconds, str(embedding))
+    # Store embeddings and text in Redis with TTL
+    for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+        vector_key = f"{vector_id}:{i}"
+        text_key = f"{vector_id}:text:{i}"
+        redis_client.setex(vector_key, settings.ttl_seconds, str(embedding))  # Store the embedding
+        redis_client.setex(text_key, settings.ttl_seconds, chunk)  # Store the original text chunk
     
     return vector_id
