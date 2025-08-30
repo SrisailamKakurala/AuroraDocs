@@ -84,7 +84,7 @@ export default function MultiDocChat() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const extractResponse = await fetch('http://0.0.0.0:8000/process/process', {
+      const extractResponse = await fetch('http://127.0.0.1:8002/docprocessor/process', {
         method: 'POST',
         body: formData,
       });
@@ -103,7 +103,7 @@ export default function MultiDocChat() {
       );
 
       // Embed the text
-      const embedResponse = await fetch('http://0.0.0.0:8001/embed/embed', {
+      const embedResponse = await fetch('http://127.0.0.1:8003/embedder/embed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: extractData.text, session_id: sessionId }),
@@ -161,7 +161,7 @@ export default function MultiDocChat() {
     setIsAnalyzing(true);
 
     try {
-      const ragResponse = await fetch('http://0.0.0.0:8004/rag-service/rag', {
+      const ragResponse = await fetch('http://127.0.0.1:8004/rag-service/rag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userQuestion, session_ids: vectorIds }),

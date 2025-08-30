@@ -1,7 +1,10 @@
 import { motion } from "framer-motion";
 import { FileText, ChevronDown } from "lucide-react";
-import LoadingIndicator from "./LoadingIndicator";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import LoadingIndicator from "./LoadingIndicator";
+import SourceComponent from "./SourceComponent";
 
 export default function ChatWindow({ 
   messages, 
@@ -9,37 +12,10 @@ export default function ChatWindow({
   fileName,
   chatEndRef 
 }) {
-  const [showContext, setShowContext] = useState(false);
+  const [showSources, setShowSources] = useState({});
 
-  const renderMessageContent = (content) => {
-    // Split content into lines and process each
-    return content.split("\n").map((line, index) => {
-      let processedLine = line.trim();
-
-      // Handle bold text (e.g., **text**)
-      processedLine = processedLine.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-
-      // Handle headings (e.g., **Subject:** or lines starting with **)
-      if (processedLine.startsWith("**") && processedLine.endsWith("**")) {
-        return <h4 key={index} className="text-lg font-semibold text-purple-400 mb-2">{processedLine.replace(/\*\*/g, "")}</h4>;
-      }
-
-      // Handle unordered lists (lines starting with * or -)
-      if (processedLine.match(/^\s*[-*]\s+/)) {
-        return <li key={index} className="text-gray-300 ml-6 list-disc">{processedLine.replace(/^\s*[-*]\s+/, "")}</li>;
-      }
-
-      // Handle code blocks or examples (e.g., --- or indented text)
-      if (processedLine.startsWith("---")) {
-        return <hr key={index} className="my-4 border-white/10" />;
-      }
-      if (processedLine.match(/^[\s*]+\S/)) {
-        return <pre key={index} className="bg-white/5 p-2 rounded text-sm text-gray-400">{processedLine}</pre>;
-      }
-
-      // Handle normal text
-      return processedLine ? <p key={index} className="text-gray-300 mb-2">{processedLine}</p> : null;
-    });
+  const toggleSources = (index) => {
+    setShowSources((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
   return (
@@ -69,27 +45,25 @@ export default function ChatWindow({
         >
           {message.type === 'bot' && message.content?.response ? (
             <>
-              <div dangerouslySetInnerHTML={{ __html: renderMessageContent(message.content.response) }} />
+              <ReactMarkdown
+                rehypePlugins={[rehypeRaw]}
+                className="prose prose-invert max-w-none"
+                components={{
+                  p: ({ node, ...props }) => <p className="text-gray-300 mb-2" {...props} />,
+                  h4: ({ node, ...props }) => <h4 className="text-lg font-semibold text-purple-400 mb-2" {...props} />,
+                  li: ({ node, ...props }) => <li className="text-gray-300 ml-6 list-disc" {...props} />,
+                  hr: ({ node, ...props }) => <hr className="my-4 border-white/10" {...props} />,
+                  pre: ({ node, ...props }) => <pre className="bg-white/5 p-2 rounded text-sm text-gray-400" {...props} />,
+                }}
+              >
+                {message.content.response}
+              </ReactMarkdown>
               {message.content.context_docs && message.content.context_docs.length > 0 && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => setShowContext(!showContext)}
-                    className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors"
-                  >
-                    <ChevronDown className={`w-4 h-4 ${showContext ? 'rotate-180' : ''} transition-transform`} />
-                    {showContext ? "Hide Sources" : "Show Sources"}
-                  </button>
-                  {showContext && (
-                    <div className="mt-2 p-3 bg-white/5 rounded-lg text-sm text-gray-400 space-y-2">
-                      {message.content.context_docs.map((doc, docIndex) => (
-                        <div key={docIndex}>
-                          <p className="font-medium text-gray-300">Source {docIndex + 1}:</p>
-                          <pre className="whitespace-pre-wrap break-words">{doc}</pre>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <SourceComponent
+                  sources={message.content.context_docs}
+                  isOpen={showSources[index]}
+                  onToggle={() => toggleSources(index)}
+                />
               )}
             </>
           ) : (
