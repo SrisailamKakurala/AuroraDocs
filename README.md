@@ -1,8 +1,8 @@
-# 📚 Doc Intelligence App - Project Documentation
+# 📚 Aurora Docs - Project Documentation
 
 ## 🚀 Overview
 
-The **Doc Intelligence App** is an AI-powered application built using **ReactJS (frontend)**, **FastAPI (backend)**, and **AI models** (Gemini, IBM Granite, or other LLMs). It helps students and faculty interact with documents (PDFs, DOCX, or text input), generate comprehensive notes, create question papers, and much more.
+The **Aurora Docs [Study Mate]** is an AI-powered application built using **ReactJS (frontend)**, **FastAPI (backend)**, and **AI models** (Gemini, IBM Granite, or other LLMs). It helps students and faculty interact with documents (PDFs, DOCX, or text input), generate comprehensive notes, create question papers, and much more.
 
 This app aims to be a **one-stop academic assistant** by supporting:
 
@@ -74,5 +74,82 @@ This app aims to be a **one-stop academic assistant** by supporting:
 * Theming (Light/Dark mode).
 * Profile management & logout.
 
+---
 
+# 🚀 Running the Project
 
+## 📂 Clone the Repository
+
+```bash
+git clone https://github.com/your-username/aurora-docs.git
+cd aurora-docs
+```
+
+---
+
+## 🌐 Start the Frontend
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+---
+
+## ⚙️ Start the Backend
+
+### 1️⃣ Spin up Redis (required for microservices)
+
+Make sure you are inside the `backend/` directory:
+
+```bash
+cd backend
+docker-compose up -d
+```
+
+This will start a Redis instance in the background.
+
+---
+
+### 2️⃣ Start Microservices
+
+Each service needs to run independently in its own terminal:
+
+#### 📄 Document Processor Service (`doc_processor`)
+
+```bash
+cd backend/doc_processor
+python -m venv .venv
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8002
+```
+
+#### 🧠 Embedder Service (`embedder`)
+
+```bash
+cd backend/embedder
+python -m venv .venv
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8003
+```
+
+#### 🔍 RAG Service (`rag`)
+
+```bash
+cd backend/rag
+python -m venv .venv
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8004
+```
+
+---
+
+✨ Now your **frontend + backend + Redis + microservices** are all up and running!
+
+---
+
+# 🎉 Congratulations! You've successfully set up your Aurora Docs App.
