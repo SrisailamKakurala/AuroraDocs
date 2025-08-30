@@ -1,7 +1,7 @@
 Great! Designing a scalable, microservices-based backend architecture for your **Doc Intelligence App** with FastAPI and the mentioned technologies is a solid approach. Here's a detailed plan and design to get you started.
 
 ---
-
+ 
 ## 1. **High-Level Microservices Architecture**
 
 Your app has multiple distinct features that can be naturally separated into microservices. Each microservice will be responsible for a specific domain or functionality.
