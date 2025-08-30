@@ -1,21 +1,13 @@
-from pydantic_settings import BaseSettings # type: ignore
-from functools import lru_cache
+import os
+from dotenv import load_dotenv # type: ignore
 
-class Settings(BaseSettings):
-    host: str = "0.0.0.0"
-    port: int = 8003  # Different port to avoid conflict with DocProcessor
-    debug: bool = False
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    redis_db: int = 0
-    ttl_seconds: int = 3200  # 30 minutes TTL
-    chunk_size: int = 500  # Tokens per chunk
-    chunk_overlap: int = 100  # Overlap between chunks
+load_dotenv()
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+class Config:
+    DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+    HOST = os.getenv("HOST", "0.0.0.0")
+    PORT = int(os.getenv("PORT", 8005))
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-@lru_cache()
-def get_settings():
-    return Settings()
+config = Config()

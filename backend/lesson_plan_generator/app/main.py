@@ -1,27 +1,21 @@
-import uvicorn # type: ignore
 from fastapi import FastAPI # type: ignore
-from app.routes.embed import app as embed_app
-from app.config.env import get_settings
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
+from app.routes.lesson_plan import router # type: ignore
+from app.config.env import config
 
-settings = get_settings()
-app = FastAPI(title="Embedder Service")
+app = FastAPI()
 
 # CORS Middleware
-origins = [
-    "http://localhost:5173",  # Vite development server
-    "http://127.0.0.1:5173",  # Alternative localhost address
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # List of allowed origins
+    allow_origins=config.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-app.mount("/embedder", embed_app)
+app.include_router(router)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=settings.host, port=settings.port, reload=settings.debug)
+    import uvicorn # type: ignore
+    uvicorn.run(app, host=config.HOST, port=config.PORT)
